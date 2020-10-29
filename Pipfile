@@ -15,7 +15,7 @@ pydub = "*"
 dialogflow = "*"
 google-search-api = "*"
 google-search-results = "*"
-"discord.py" = {git = "https://github.com/imayhaveborkedit/discord.py"}
+"discord.py" = {extras = ["voice"], git = "https://github.com/Gorialis/discord.py", ref = "voice-recv-mk3"}
 google-cloud-texttospeech = "*"
 google-cloud-speech = "*"
 simpleaudio = "*"
@@ -23,6 +23,8 @@ transformers = "*"
 parlai = "*"
 subword-nmt = {git = "https://github.com/rsennrich/subword-nmt.git"}
 coloredlogs = "*"
+webrtcvad = "*"
+google-cloud-translate = "*"
 
 [requires]
 python_version = "3.8"

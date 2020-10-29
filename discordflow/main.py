@@ -6,7 +6,7 @@ from contextlib import suppress, asynccontextmanager
 from struct import Struct
 from typing import List
 
-import webrtcvad
+from webrtcvad import Vad
 
 import discord.utils
 from discord import File, SpeakingState, VoiceClient, Client
@@ -56,7 +56,7 @@ class UserSink:
         self.play_stream = parent.play_stream
         self.play_interruptible = parent.play_interruptible
         self.speak = parent.speak
-        self.vad = webrtcvad.Vad(3)
+        self.vad = Vad(3)
         self.listen_task = BackgroundTask()
         self.listen_task.start(self.listen_loop())
         logger.info(f"Started {self!r}")
@@ -390,11 +390,11 @@ class DiscordFlowBot(commands.bot.BotBase, Client):
         logger.info(f"Logged in as {self.user}")
         _load_default()
         channels = {channel.name: channel for channel in self.get_all_channels()}
-        handler = DiscordHandler(channels['bot-logs'])
-        handler.setLevel(logging.INFO)
+        handler = DiscordHandler(channels['boss-only'])
+        handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(name)s: %(message)s')
         handler.setFormatter(formatter)
-        for logger_name in os.getenv('LOGGERS_DISCORD').split(','):
+        for logger_name in ['discord', 'cities', 'akinator', 'googlesearch', 'parlai', 'youtubedl']:
             logging.getLogger(logger_name).addHandler(handler)
         logger.debug(f"Guilds: {self.guilds}")
         for guild in self.guilds:
@@ -403,20 +403,7 @@ class DiscordFlowBot(commands.bot.BotBase, Client):
             voice_channel = discord.utils.get(guild.voice_channels)
             voice_client = await voice_channel.connect()
             voice_bot = DemultiplexerSink(voice_client, [
-                'view glass',
-                'grasshopper',
-                'blueberry',
-                'jarvis',
                 'bumblebee',
-                'porcupine',
-                'picovoice',
-                'snowboy',
-                'grapefruit',
-                'smart mirror',
-                'alexa',
-                'americano',
-                'computer',
-                'terminator',
             ])
             await voice_bot.start()
             self.voice_bots[voice_channel] = voice_bot
@@ -442,8 +429,17 @@ def setup_logging():
 
 
 def main():
+    # How to setup and run
+    # cd discord-flow (not discord-flow/discordflow)
+    # pipenv sync
+    # pipenv uninstall discord.py
+    # pipenv install "discord.py[voice] @ git+https://github.com/Gorialis/discord.py@voice-recv-mk3"
+    # pipenv install parlai
+    # pipenv install webrtcvad
+    # setup .env file with DISCORD_BOT_TOKEN
+    # pipenv run python -m discordflow
     setup_logging()
     logger.info(f"Loaded skills: {list(registry.skills)}")
     bot = DiscordFlowBot()
     bot.add_cog(DialogflowCog())
-    bot.run(os.getenv('TOKEN'))
+    bot.run(os.getenv('DISCORD_BOT_TOKEN'))
