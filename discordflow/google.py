@@ -27,9 +27,12 @@ def get_lang():
 
 async def text_to_speech(text) -> Audio:
     voice = texttospeech.VoiceSelectionParams(
-        language_code=get_lang(),
+        # language_code=get_lang(),
         ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
-        name='en-IN-Wavenet-B',
+        # language_code='en-US',
+        # name='en-IN-Wavenet-B',
+        language_code='ru-RU',
+        name='ru-RU-Wavenet-C',
     )
     client = texttospeech.TextToSpeechClient()
     synthesis_input = texttospeech.SynthesisInput(text=text)
@@ -42,7 +45,7 @@ async def text_to_speech(text) -> Audio:
         client.synthesize_speech, input=synthesis_input, voice=voice, audio_config=audio_config,
     )
     result = Audio.from_wav(response.audio_content)
-    logger.debug(f"TTS: {text} -> {result}")
+    logger.info(f"TTS: {text} -> {result}")
     return result
 
 
@@ -103,11 +106,11 @@ def set_contexts(*contexts):
 async def detect_intent(
     user: Member, text: str = None, speech: Audio = None, event: str = None, params: dict = None,
 ) -> Intent:
-    dialogflow_project_id = os.getenv('DIALOGFLOW_PROJECT_ID')
+    dialogflow_project_id = os.getenv('DIALOGFLOW_PROJECT')
     client = SessionsClient()
     contexts_client = ContextsClient()
     session = client.session_path(dialogflow_project_id, user)
-    logger.debug(f"Session: {session}")
+    logger.info(f"Session: {session}")
     kwargs = {}
     if text:
         query_input = QueryInput(text=TextInput(text=text, language_code=get_lang()))

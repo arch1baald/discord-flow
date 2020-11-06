@@ -6,7 +6,7 @@ from ..utils import registry, language
 from ..google import translate
 
 
-@registry.skill()
+# @registry.skill()
 async def parlai(bot, userstate, initial=None):
     opt = Opt.load('opt')
     agent = create_agent(opt, requireModelExists=True)

@@ -27,14 +27,16 @@ logger = logging.getLogger(__name__)
 
 async def speech_to_text(audio: Audio):
     if language.get() == 'ru':
-        return await yandex.speech_to_text(audio)
+        # return await yandex.speech_to_text(audio)
+        return await google.speech_to_text(audio)
     else:
         return await google.speech_to_text(audio)
 
 
 async def text_to_speech(text: str):
     if language.get() == 'ru':
-        return await yandex.text_to_speech(text)
+        # return await yandex.text_to_speech(text)
+        return await google.text_to_speech(text)
     else:
         return await google.text_to_speech(text)
 
@@ -150,8 +152,8 @@ class UserSink:
             await registry.run_skill(skill, self, self.user, **intent.parameters)
         elif intent.action == 'set-language':
             language.set(intent.parameters['lang'])
-        elif intent.action == 'fallback':
-            await registry.run_skill('parlai', self, self.user, initial=intent.query_text)
+        # elif intent.action == 'fallback':
+        #     await registry.run_skill('parlai', self, self.user, initial=intent.query_text)
         elif intent.action:
             logger.warning(f"{self!r} unknown action {intent.action}")
             await self.speak(f"неизвестный экшен: {intent.action}")
@@ -249,6 +251,13 @@ class DemultiplexerSink(AudioSink):
             await usersink.close()
 
     async def demux_loop(self):
+        logger.info(f'''
+        Running demux loop...
+        self.reader.listen_voice(): {self.reader.listen_voice()}
+        
+        If empty
+        pipenv install "discord.py[voice] @ git+https://github.com/nikicat/discord.py@voice-recv-nb-merged"
+        ''')
         async for voice_data in self.reader.listen_voice():
             try:
                 sink = self.get_user_sink(voice_data.user)
@@ -297,14 +306,14 @@ class DemultiplexerSink(AudioSink):
                 await task
         done_coro = done.pop().get_coro()
         if done_coro in waiters:
-            logger.debug(f"Interrupted by {waiters[done_coro]}")
+            logger.info(f"Interrupted by {waiters[done_coro]}")
             raise Interrupted
 
     async def play_interruptible(self, audio: Audio):
         return await self.run_interruptible(self.play(audio))
 
     async def speak(self, text):
-        logger.debug(f"Speaking: {text}")
+        logger.info(f"Speaking: {text}")
         audio = await text_to_speech(text=text)
         await self.play_interruptible(audio)
 
@@ -391,7 +400,7 @@ class DiscordFlowBot(commands.bot.BotBase, Client):
         _load_default()
         channels = {channel.name: channel for channel in self.get_all_channels()}
         handler = DiscordHandler(channels['boss-only'])
-        handler.setLevel(logging.DEBUG)
+        handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(name)s: %(message)s')
         handler.setFormatter(formatter)
         for logger_name in ['discord', 'cities', 'akinator', 'googlesearch', 'parlai', 'youtubedl']:
@@ -422,6 +431,8 @@ class DiscordFlowBot(commands.bot.BotBase, Client):
 def setup_logging():
     logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(levelname)s[%(name)-20s] %(message)s')
     logging.getLogger('discord.gateway').setLevel(logging.WARNING)
+    logging.getLogger('discord.client').setLevel(logging.WARNING)
+    logging.getLogger('discord.client').setLevel(logging.WARNING)
     for level, name in logging._levelToName.items():
         for logger_name in os.getenv(f'LOGGERS_{name}', '').split(','):
             if logger_name:
@@ -433,10 +444,13 @@ def main():
     # cd discord-flow (not discord-flow/discordflow)
     # pipenv sync
     # pipenv uninstall discord.py
-    # pipenv install "discord.py[voice] @ git+https://github.com/Gorialis/discord.py@voice-recv-mk3"
+    # pipenv install "discord.py[voice] @ git+https://github.com/nikicat/discord.py@voice-recv-nb-merged"
     # pipenv install parlai
     # pipenv install webrtcvad
+    # pipenv install google-cloud-translate
     # setup .env file with DISCORD_BOT_TOKEN
+    # fix Overwrites problem with https://github.com/Rapptz/discord.py/commit/0bc15fa130b8f01fe2d67446a2184d474b0d0ba7
+    # add to /etc/hosts a line 127.0.0.1 russia703.discord.media:443
     # pipenv run python -m discordflow
     setup_logging()
     logger.info(f"Loaded skills: {list(registry.skills)}")
